@@ -59,7 +59,7 @@
 <style>
   .main-text-wrapper {
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
     width: 100%;
     margin: 1rem 0;
     white-space: nowrap;

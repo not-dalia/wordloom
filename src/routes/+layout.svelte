@@ -44,6 +44,9 @@
     align-items: center;
     padding: 0 20px;
     margin-bottom: 20px;
+    position: absolute;
+    top: 0;
+    right: 0;
   }
 
 	#night-mode-toggle input[type='checkbox'] {
