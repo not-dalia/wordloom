@@ -4,7 +4,7 @@
   import SentenceFinder from '$lib/sentenceFinder.js';
 	import SentenceLine from '$lib/components/SentenceLine.svelte';
   import { story } from '$lib/pap.js';
-
+  import { tick } from 'svelte';
   /**
    * @type HTMLDivElement | null
    */
@@ -47,7 +47,7 @@
 
   let surroundingLines;
   $: {
-    let {sanitisedWord, index} = sentenceFinder.sentenceMap[currentSentenceIndex].words[currentWordIndex];
+    let {sanitisedWord, index} = flatSentenceMap[currentWordIndex];
     surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index);
   };
 
@@ -80,7 +80,16 @@ Mr. Bennet made no answer.
   // let sentenceWords = getSentenceWords(sentence);
 
   let sentenceFinder = new SentenceFinder(story[0]);
-  console.log(sentenceFinder);
+  // let sentenceFinder = new SentenceFinder(story[0]);
+  // let sentenceFinder = new SentenceFinder(story[33]);
+
+  let flatSentenceMap = sentenceFinder.sentenceMap.reduce((acc, sentence, i) => {
+    return acc.concat(sentence.words.map(word => ({
+      i,
+      ...word
+    })));
+  }, []);
+  console.log(flatSentenceMap);
 
   /**
    * @param {string} sentence
@@ -102,32 +111,23 @@ Mr. Bennet made no answer.
 
   /**
    * @param {number} index
-   * @param {number} sentenceIndex
    * @returns {number}
    */
-  function getWordPosition(index, sentenceIndex) {
-    if (!wordSpanRefs[`${sentenceIndex}-${index}`]) return;
-    const wordRect = wordSpanRefs[`${sentenceIndex}-${index}`].getBoundingClientRect();
+  function getWordPosition(index) {
+    if (!wordSpanRefs[index]) return;
+    const wordRect = wordSpanRefs[index].getBoundingClientRect();
     return wordRect.left + wordRect.width / 2;
   }
 
   /**
    *
    * @param {number} index
-   * @param {number} sentenceIndex
    * @returns {number}
    */
-  function getWordWidth(index, sentenceIndex) {
-    if (!wordSpanRefs[`${sentenceIndex}-${index}`]) return;
-    const wordRect = wordSpanRefs[`${sentenceIndex}-${index}`].getBoundingClientRect();
+  function getWordWidth(index) {
+    if (!wordSpanRefs[index]) return;
+    const wordRect = wordSpanRefs[index].getBoundingClientRect();
     return wordRect.width;
-  }
-
-  function handleWordProgress() {
-    selectNextWord();
-
-    mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex, currentSentenceIndex) + mainTextXTranslate;
-    wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
   }
 
   /**
@@ -138,17 +138,24 @@ Mr. Bennet made no answer.
     seekLine.style.width = `${width + 10}px`;
   }
 
-  function calculateTranslate() {
-    mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex, currentSentenceIndex) + mainTextXTranslate;
+  async function calculateTranslate() {
+    await tick();
+    const seekLinePosition = getSeekLinePosition();
+    const wordPosition = getWordPosition(currentWordIndex) - mainTextXTranslate;
+    const diff = seekLinePosition - wordPosition;
+    mainTextXTranslate = diff
+    console.log(`word position: ${wordPosition}`);
+    console.log(`seek line position: ${seekLinePosition}`);
+    console.log(`diff: ${diff}`);
+    console.log(`mainTextXTranslate: ${mainTextXTranslate}` )
+
+    // mainTextXTranslate = - getSeekLinePosition() + getWordPositionInMainText(currentWordIndex, currentSentenceIndex);
+    // mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex, currentSentenceIndex) + mainTextXTranslate;
   }
 
   function selectNextWord() {
-    if (currentWordIndex >= sentenceFinder.sentenceMap[currentSentenceIndex].words.length - 1) {
-      if (currentSentenceIndex >= sentenceFinder.sentenceMap.length - 1) {
-        return;
-      }
-      currentWordIndex = 0;
-      currentSentenceIndex++;
+    if (currentWordIndex >= flatSentenceMap.length - 1) {
+      return
     } else {
       currentWordIndex++;
     }
@@ -156,21 +163,16 @@ Mr. Bennet made no answer.
 
   function selectPreviousWord() {
     if (currentWordIndex <= 0) {
-      if (currentSentenceIndex <= 0) {
         return;
-      }
-      currentSentenceIndex--;
-      currentWordIndex = sentenceFinder.sentenceMap[currentSentenceIndex].words.length - 1;
     } else {
       currentWordIndex--;
     }
   }
 
-  function selectWord(index, sentenceIndex) {
+  function selectWord(index) {
     currentWordIndex = index;
-    currentSentenceIndex = sentenceIndex;
     calculateTranslate();
-    setSeekLineWidth(getWordWidth(currentWordIndex, currentSentenceIndex));
+    setSeekLineWidth(getWordWidth(currentWordIndex));
   }
 
   function onKeyPress(e) {
@@ -178,19 +180,19 @@ Mr. Bennet made no answer.
     if (e.key === 'ArrowRight') {
       selectNextWord();
       calculateTranslate();
-      setSeekLineWidth(getWordWidth(currentWordIndex, currentSentenceIndex));
+      setSeekLineWidth(getWordWidth(currentWordIndex));
     } else if (e.key === 'ArrowLeft') {
       selectPreviousWord();
       calculateTranslate();
-      setSeekLineWidth(getWordWidth(currentWordIndex, currentSentenceIndex));
+      setSeekLineWidth(getWordWidth(currentWordIndex));
     }
   }
 
   onMount(() => {
-    mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex, currentSentenceIndex);
-    let {sanitisedWord, index} = sentenceFinder.sentenceMap[currentSentenceIndex].words[currentWordIndex];
+    mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex);
+    let {sanitisedWord, index} = flatSentenceMap[currentWordIndex];
     surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index);
-    setSeekLineWidth(getWordWidth(currentWordIndex, currentSentenceIndex));
+    setSeekLineWidth(getWordWidth(currentWordIndex));
 
     // wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
   });
@@ -202,6 +204,7 @@ Mr. Bennet made no answer.
 />
 
 <div class="text-container">
+
   <div id="seek-line" bind:this={seekLine}></div>
   <div class="previous-container">
     {#if surroundingLines && surroundingLines.previous}
@@ -215,13 +218,15 @@ Mr. Bennet made no answer.
       <!-- {#each sentenceWords as word, i (`${word}-${i}`)}
         <span class="word" data-index={i} bind:this={wordSpanRefs[i]}>{word}</span><span>&nbsp;</span>
       {/each} -->
-      {#each sentenceFinder.sentenceMap as sentence, i (`${sentence}-${i}`)}
-        {#each sentence.words as word, j (`${word}-${i}-${j}`)}
-          <button class="word" data-index={j} data-sentence={i} bind:this={wordSpanRefs[`${i}-${j}`]} style="background-color_defunt: {j == currentWordIndex &&  i == currentSentenceIndex ? '#ccc' : 'transparent'}"
-          on:click={() => selectWord(j, i)}
-          >{word.word}</button><span>&nbsp;</span>
+        {#each flatSentenceMap as word, j (`${word.i}-${j}`)}
+          {#if (j > currentWordIndex - 10 && j < currentWordIndex + 10)}
+            <button class="word" data-index={j} data-sentence={word.i} bind:this={wordSpanRefs[j]} style="background-color_defunt: {j == currentWordIndex ? '#ccc' : 'transparent'}"
+            on:click={() => selectWord(j)}
+            >{word.word}</button><span>&nbsp;</span>
+          {:else}
+            <span>{word.word}</span><span>&nbsp;</span>
+          {/if}
         {/each}
-      {/each}
     </div>
   </div>
   <div class="next-container">
