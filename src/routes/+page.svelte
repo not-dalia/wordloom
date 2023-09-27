@@ -556,12 +556,12 @@ Mr. Bennet made no answer.
     }
 
     .next-container {
-      top: calc(50% + 1rem);
+      top: calc(50% + 1.5rem);
       padding: 0 1rem;
     }
 
     .previous-container {
-      bottom: calc(50% + 1rem);
+      bottom: calc(50% + 1.5rem);
       padding: 0 1rem;
     }
 

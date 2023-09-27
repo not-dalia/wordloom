@@ -80,6 +80,12 @@
     z-index: 10;
   }
 
+  @media (max-width: 600px) {
+    .main-text-wrapper {
+      margin: 0.5rem 0;
+    }
+  }
+
   :global(.day-mode) .main-text-wrapper:before {
     background-image: linear-gradient(to right, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0) 5%, rgba(255, 255, 255, 0) 95%, rgba(255, 255, 255, 1));
   }
