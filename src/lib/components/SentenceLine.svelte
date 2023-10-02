@@ -2,6 +2,11 @@
 	import { onMount } from "svelte";
 
   /**
+   * @type {function(number): void}
+   */
+  export let onClick;
+
+  /**
    * @type {{word: string, sanitisedWord: string, index: number}[]}
    */
   export let words;
@@ -46,7 +51,7 @@
 
 </script>
 
-<div class="main-text-wrapper light-text" data-index={indexInSentence}>
+<div class="main-text-wrapper light-text" data-index={indexInSentence} on:click={() => onClick(indexInSentence)} role="button" tabindex="0" on:keydown={e => e.key == 'Enter' && onClick(indexInSentence)}>
   <div class="main-text"style="transform: translateX({mainTextXTranslate}px);">
   {#each words as word, j (word)}
     <span class="word" data-index={j} bind:this={wordSpanRefs[j]} style="background-color_defunt: {j == indexInSentence ? '#e4e4e4' : 'transparent'}"
@@ -63,6 +68,11 @@
     width: 100%;
     margin: 1rem 0;
     white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .main-text-wrapper:hover, .main-text-wrapper:focus {
+    background-color: rgba(34, 183, 188, 0.2);
   }
 
   .light-text {

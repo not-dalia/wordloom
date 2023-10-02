@@ -252,6 +252,13 @@
 		wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 	}
 
+	async function selectSentence(sentenceIndex, indexInSentence) {
+		currentWordIndex = flatSentenceMap.findIndex((word) => word.i === sentenceIndex) + indexInSentence;
+		calculateTranslate();
+		await tick();
+		setSeekLineWidth(getWordWidth(currentWordIndex));
+	}
+
 	onMount(() => {
 		mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex);
 		let { sanitisedWord, index } = flatSentenceMap[currentWordIndex];
@@ -351,6 +358,7 @@
 					words={sentenceFinder.sentenceMap[line.sentenceIndex].words}
 					{getSeekLinePosition}
 					indexInSentence={line.indexInSentence}
+					onClick={(indexInSentence) => selectSentence(line.sentenceIndex, indexInSentence)}
 				/>
 			{/each}
 		{/if}
@@ -361,20 +369,6 @@
 			bind:this={mainText}
 			style="transform: translateX({mainTextXTranslate}px); color: {$nightMode ? '#fff' : '#222'}"
 		>
-			<!-- {#each flatSentenceMap as word, j (`${word.i}-${j}`)}
-				{#if j > currentWordIndex - 20 && j < currentWordIndex + 20}
-					<button
-						class="word"
-						data-index={j}
-						data-sentence={word.i}
-						bind:this={wordSpanRefs[j]}
-						style="background-color_defunt: {j == currentWordIndex ? '#ccc' : 'transparent'}"
-						on:click={() => selectWord(j)}>{word.word}</button
-					><span>&nbsp;</span>
-				{:else}
-					<span>{word.word}</span><span>&nbsp;</span>
-				{/if}
-			{/each} -->
 			{#each loadedWords as word, j (`${word.i}-${word.flatIndex}`)}
 				<button
 					class="word"
@@ -394,6 +388,7 @@
 					words={sentenceFinder.sentenceMap[line.sentenceIndex].words}
 					{getSeekLinePosition}
 					indexInSentence={line.indexInSentence}
+					onClick={(indexInSentence) => selectSentence(line.sentenceIndex, indexInSentence)}
 				/>
 			{/each}
 		{/if}
