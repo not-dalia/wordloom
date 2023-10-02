@@ -50,6 +50,13 @@
 	 */
 	let maxSurroundingOcurrences = 3;
 
+	const maxLoadedWords = 4;
+	let loadedWords = [];
+	$: {
+		loadedWords = flatSentenceMap.filter((word, i) => {
+			return i > currentWordIndex - maxLoadedWords && i < currentWordIndex + maxLoadedWords;
+		})
+	}
 	
 	/**
 	 * @type {{ previous: any; next: any; }}
@@ -68,7 +75,7 @@
 	 */
 	let seekLinePosition = 0;
 
-	let sentenceFinder = new SentenceFinder(story[0]);
+	let sentenceFinder = new SentenceFinder(story.join(' '));
 	// let sentenceFinder = new SentenceFinder(story[0]);
 	// let sentenceFinder = new SentenceFinder(story[33]);
 
@@ -85,9 +92,10 @@
 	let flatSentenceMap = sentenceFinder.sentenceMap.reduce(
 		(/** @type WordInfo[] */ acc, sentence, i) => {
 			return acc.concat(
-				sentence.words.map((word) => ({
+				sentence.words.map((word, j) => ({
 					i,
-					...word
+					...word,
+					flatIndex: acc.length + j
 				}))
 			);
 		},
@@ -353,7 +361,7 @@
 			bind:this={mainText}
 			style="transform: translateX({mainTextXTranslate}px); color: {$nightMode ? '#fff' : '#222'}"
 		>
-			{#each flatSentenceMap as word, j (`${word.i}-${j}`)}
+			<!-- {#each flatSentenceMap as word, j (`${word.i}-${j}`)}
 				{#if j > currentWordIndex - 20 && j < currentWordIndex + 20}
 					<button
 						class="word"
@@ -366,6 +374,16 @@
 				{:else}
 					<span>{word.word}</span><span>&nbsp;</span>
 				{/if}
+			{/each} -->
+			{#each loadedWords as word, j (`${word.i}-${word.flatIndex}`)}
+				<button
+					class="word"
+					data-index={word.flatIndex}
+					data-sentence={word.i}
+					bind:this={wordSpanRefs[word.flatIndex]}
+					style="background-color_defunt: {word.flatIndex == currentWordIndex ? '#ccc' : 'transparent'}"
+					on:click={() => selectWord(word.flatIndex)}>{word.word}</button
+				><span>&nbsp;</span>
 			{/each}
 		</div>
 	</div>
