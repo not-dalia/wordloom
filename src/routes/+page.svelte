@@ -45,7 +45,7 @@
 	 */
 	let wordProgressPace = 1000;
 
-  let maxSurroundingOcurrences = 5;
+  let maxSurroundingOcurrences = 3;
 	let surroundingLines;
 	$: {
 		let { sanitisedWord, index } = flatSentenceMap[currentWordIndex];
@@ -57,34 +57,21 @@
 	 */
 	let seekLinePosition = 0;
 
-	const sentence = `It is a truth universally acknowledged, that a single man in possession
-of a good fortune must be in want of a wife.
-
-However little known the feelings or views of such a man may be on his
-first entering a neighbourhood, this truth is so well fixed in the minds
-of the surrounding families, that he is considered as the rightful
-property of some one or other of their daughters.
-
-“My dear Mr. Bennet,” said his lady to him one day, “have you heard that
-Netherfield Park is let at last?”
-
-Mr. Bennet replied that he had not.
-
-“But it is,” returned she; “for Mrs. Long has just been here, and she
-told me all about it.”
-
-Mr. Bennet made no answer.
-
-“Do not you want to know who has taken it?” cried his wife, impatiently.
-
-“_You_ want to tell me, and I have no objection to hearing it.”`;
-	// let sentenceWords = getSentenceWords(sentence);
-
 	let sentenceFinder = new SentenceFinder(story[0]);
 	// let sentenceFinder = new SentenceFinder(story[0]);
 	// let sentenceFinder = new SentenceFinder(story[33]);
 
-	let flatSentenceMap = sentenceFinder.sentenceMap.reduce((acc, sentence, i) => {
+	/**
+	 * @typedef {Object} WordInfo
+	 * @property {number} i
+	 * @property {string} word
+	 * @property {string} sanitisedWord
+	 * @property {number} index
+	 */
+	/**
+	 * @type WordInfo[]
+	 */
+	let flatSentenceMap = sentenceFinder.sentenceMap.reduce((/** @type WordInfo[] */ acc, sentence, i) => {
 		return acc.concat(
 			sentence.words.map((word) => ({
 				i,
@@ -231,10 +218,10 @@ Mr. Bennet made no answer.
 	onMount(() => {
 		mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex);
 		let { sanitisedWord, index } = flatSentenceMap[currentWordIndex];
-		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index);
+		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index, maxSurroundingOcurrences);
 		setSeekLineWidth(getWordWidth(currentWordIndex));
 
-		wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
+		// wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 
 		// wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 	});
