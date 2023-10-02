@@ -36,7 +36,7 @@
 	let currentSentenceIndex = 0;
 
 	/**
-	 * @type number | null
+	 * @type number | undefined
 	 */
 	let wordProgressTimeout;
 
@@ -45,11 +45,22 @@
 	 */
 	let wordProgressPace = 1000;
 
-  let maxSurroundingOcurrences = 3;
+	/**
+	 * @type number
+	 */
+	let maxSurroundingOcurrences = 3;
+
+	
+	/**
+	 * @type {{ previous: any; next: any; }}
+	 */
 	let surroundingLines;
 	$: {
 		let { sanitisedWord, index } = flatSentenceMap[currentWordIndex];
-		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index, maxSurroundingOcurrences);
+		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(
+			index,
+			maxSurroundingOcurrences
+		);
 	}
 
 	/**
@@ -71,14 +82,17 @@
 	/**
 	 * @type WordInfo[]
 	 */
-	let flatSentenceMap = sentenceFinder.sentenceMap.reduce((/** @type WordInfo[] */ acc, sentence, i) => {
-		return acc.concat(
-			sentence.words.map((word) => ({
-				i,
-				...word
-			}))
-		);
-	}, []);
+	let flatSentenceMap = sentenceFinder.sentenceMap.reduce(
+		(/** @type WordInfo[] */ acc, sentence, i) => {
+			return acc.concat(
+				sentence.words.map((word) => ({
+					i,
+					...word
+				}))
+			);
+		},
+		[]
+	);
 	console.log(flatSentenceMap);
 
 	/**
@@ -90,10 +104,13 @@
 	}
 
 	/**
-	 * @returns {number} | null
+	 * @returns {number}
 	 */
 	function getSeekLinePosition() {
-		if (!seekLine) return;
+		if (!seekLine) {
+			console.log(`seekLine not found for ${currentWordIndex}`);
+			return 0;
+		}
 		const seekLineRect = seekLine.getBoundingClientRect();
 		seekLinePosition = seekLineRect.left + seekLineRect.width / 2;
 		return seekLinePosition;
@@ -104,7 +121,10 @@
 	 * @returns {number}
 	 */
 	function getWordPosition(index) {
-		if (!wordSpanRefs[index]) return;
+		if (!wordSpanRefs[index]) {
+			console.log(`wordSpanRefs not found for ${index}`);
+			return 0;
+		}
 		const wordRect = wordSpanRefs[index].getBoundingClientRect();
 		return wordRect.left + wordRect.width / 2;
 	}
@@ -115,7 +135,10 @@
 	 * @returns {number}
 	 */
 	function getWordWidth(index) {
-		if (!wordSpanRefs[index]) return;
+		if (!wordSpanRefs[index]) {
+			console.log(`wordSpanRefs not found for ${index}`);
+			return 0;
+		}
 		const wordRect = wordSpanRefs[index].getBoundingClientRect();
 		return wordRect.width;
 	}
@@ -154,18 +177,24 @@
 		}
 	}
 
+	/**
+	 * @param {number} index
+	 */
 	function selectWord(index) {
 		currentWordIndex = index;
 		calculateTranslate();
 		setSeekLineWidth(getWordWidth(currentWordIndex));
 	}
 
+	/**
+	 * @param {KeyboardEvent} e
+	 */
 	function onKeyPress(e) {
 		console.log(e.key);
 		if (e.key === 'ArrowRight') {
 			if (wordProgressTimeout) {
 				clearTimeout(wordProgressTimeout);
-				wordProgressTimeout = null;
+				wordProgressTimeout = undefined;
 			}
 			selectNextWord();
 			calculateTranslate();
@@ -173,7 +202,7 @@
 		} else if (e.key === 'ArrowLeft') {
 			if (wordProgressTimeout) {
 				clearTimeout(wordProgressTimeout);
-				wordProgressTimeout = null;
+				wordProgressTimeout = undefined;
 			}
 			selectPreviousWord();
 			calculateTranslate();
@@ -183,7 +212,7 @@
 				handleWordProgress();
 			} else {
 				clearTimeout(wordProgressTimeout);
-				wordProgressTimeout = null;
+				wordProgressTimeout = undefined;
 			}
 		}
 	}
@@ -191,7 +220,7 @@
 	function onRightButtonClick() {
 		if (wordProgressTimeout) {
 			clearTimeout(wordProgressTimeout);
-			wordProgressTimeout = null;
+			wordProgressTimeout = undefined;
 		}
 		selectNextWord();
 		calculateTranslate();
@@ -201,7 +230,7 @@
 	function onLeftButtonClick() {
 		if (wordProgressTimeout) {
 			clearTimeout(wordProgressTimeout);
-			wordProgressTimeout = null;
+			wordProgressTimeout = undefined;
 		}
 		selectPreviousWord();
 		calculateTranslate();
@@ -218,10 +247,11 @@
 	onMount(() => {
 		mainTextXTranslate = getSeekLinePosition() - getWordPosition(currentWordIndex);
 		let { sanitisedWord, index } = flatSentenceMap[currentWordIndex];
-		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(index, maxSurroundingOcurrences);
+		surroundingLines = sentenceFinder.wordDictionary[sanitisedWord].getSurroundingOccurances(
+			index,
+			maxSurroundingOcurrences
+		);
 		setSeekLineWidth(getWordWidth(currentWordIndex));
-
-		// wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 
 		// wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 	});
@@ -245,7 +275,7 @@
 			<button
 				on:click={() => {
 					clearTimeout(wordProgressTimeout);
-					wordProgressTimeout = null;
+					wordProgressTimeout = undefined;
 				}}
 			>
 				<span
@@ -278,16 +308,30 @@
 	</div>
 </div>
 <div class="control">
-  <div class="pace-range">
-    <label for="pace-range">Pace (ms):</label>
-    <span>{wordProgressPace}</span>
-    <input type="range" min="100" max="5000" step="100" bind:value={wordProgressPace} id="pace-range" />
-  </div>
-  <div class="pace-range">
-    <label for="max-surrounding">Sentence count:</label>
-    <span>{maxSurroundingOcurrences}</span>
-    <input type="range" min="1" max="10" step="1" bind:value={maxSurroundingOcurrences} id="max-surrounding" />
-  </div>
+	<div class="pace-range">
+		<label for="pace-range">Pace (ms):</label>
+		<span>{wordProgressPace}</span>
+		<input
+			type="range"
+			min="100"
+			max="5000"
+			step="100"
+			bind:value={wordProgressPace}
+			id="pace-range"
+		/>
+	</div>
+	<div class="pace-range">
+		<label for="max-surrounding">Sentence count:</label>
+		<span>{maxSurroundingOcurrences}</span>
+		<input
+			type="range"
+			min="1"
+			max="10"
+			step="1"
+			bind:value={maxSurroundingOcurrences}
+			id="max-surrounding"
+		/>
+	</div>
 </div>
 
 <div class="text-container">
@@ -309,9 +353,6 @@
 			bind:this={mainText}
 			style="transform: translateX({mainTextXTranslate}px); color: {$nightMode ? '#fff' : '#222'}"
 		>
-			<!-- {#each sentenceWords as word, i (`${word}-${i}`)}
-        <span class="word" data-index={i} bind:this={wordSpanRefs[i]}>{word}</span><span>&nbsp;</span>
-      {/each} -->
 			{#each flatSentenceMap as word, j (`${word.i}-${j}`)}
 				{#if j > currentWordIndex - 20 && j < currentWordIndex + 20}
 					<button
@@ -344,15 +385,15 @@
 <style>
 	.control {
 		display: flex;
-    flex-wrap: wrap;
+		flex-wrap: wrap;
 		justify-content: center;
 		align-items: center;
-    padding: 10px 0;
+		padding: 10px 0;
 	}
 
-  .control:first-child {
-    padding-top: 22px;
-  }
+	.control:first-child {
+		padding-top: 22px;
+	}
 
 	.control div {
 		margin: 0 5px;
@@ -361,23 +402,23 @@
 	.control button {
 		background-color: transparent;
 		cursor: pointer;
-    border: 2px solid black;
+		border: 2px solid black;
 	}
 
-  :global(.night-mode) .control button {
-    border-color: white;
-  }
+	:global(.night-mode) .control button {
+		border-color: white;
+	}
 
-  .control .pace-range {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0 10px;
-  }
+	.control .pace-range {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		margin: 0 10px;
+	}
 
-  .control .pace-range input {
-    margin-left: 10px;
-  }
+	.control .pace-range input {
+		margin-left: 10px;
+	}
 
 	.text-container {
 		position: relative;
@@ -536,24 +577,24 @@
 		font-family: 'Gentium Book Plus', serif;
 	}
 
-  @media (max-width: 600px) {
-    .text-container {
-      padding: 1rem;
-      font-size: 1.5rem;
-    }
+	@media (max-width: 600px) {
+		.text-container {
+			padding: 1rem;
+			font-size: 1.5rem;
+		}
 
-    .next-container {
-      top: calc(50% + 1.5rem);
-      padding: 0 1rem;
-    }
+		.next-container {
+			top: calc(50% + 1.5rem);
+			padding: 0 1rem;
+		}
 
-    .previous-container {
-      bottom: calc(50% + 1.5rem);
-      padding: 0 1rem;
-    }
+		.previous-container {
+			bottom: calc(50% + 1.5rem);
+			padding: 0 1rem;
+		}
 
-    .main-text button {
-      font-size: 1.5rem;
-    }
-  }
+		.main-text button {
+			font-size: 1.5rem;
+		}
+	}
 </style>
