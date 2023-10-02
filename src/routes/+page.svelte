@@ -21,6 +21,16 @@
 	let mainTextXTranslate = 0;
 
 	/**
+	 * @type number
+	 */
+	let mainTextWordCompensationTranslate = 0;
+
+	/**
+	 * @type Object.<string, number>
+	 */
+	let wordWidths = {};
+
+	/**
 	 * @type Object.<string, HTMLSpanElement>
 	 */
 	let wordSpanRefs = {};
@@ -50,14 +60,28 @@
 	 */
 	let maxSurroundingOcurrences = 3;
 
+	/**
+	 * @type boolean
+	 */
+	let transitionEnabled = true;
+
+	/**
+	 * @type number
+	 */
+	let transitionLength = 200;
+
 	const maxLoadedWords = 4;
+
+	/**
+	 * @type {WordInfo[]}
+	 */
 	let loadedWords = [];
 	$: {
 		loadedWords = flatSentenceMap.filter((word, i) => {
 			return i > currentWordIndex - maxLoadedWords && i < currentWordIndex + maxLoadedWords;
-		})
+		});
 	}
-	
+
 	/**
 	 * @type {{ previous: any; next: any; }}
 	 */
@@ -75,9 +99,10 @@
 	 */
 	let seekLinePosition = 0;
 
-	let sentenceFinder = new SentenceFinder(story.join(' '));
+	// let sentenceFinder = new SentenceFinder(story.join(' '));
 	// let sentenceFinder = new SentenceFinder(story[0]);
 	// let sentenceFinder = new SentenceFinder(story[33]);
+	let sentenceFinder = new SentenceFinder("IT is a truth universally acknowledged, that a single man in possession\n    of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his\n    first entering a neighbourhood, this truth is so well fixed in the minds\n    of the surrounding families, that he is considered as the rightful\n    property of some one or other of their daughters. “My dear Mr. Bennet,” said his lady to him one day, “have you heard that\n    Netherfield Park is let at last?” Mr. Bennet replied that he had not. “But it is,” returned she; “for Mrs. Long has just been here, and she\n    told me all about it.”");
 
 	/**
 	 * @typedef {Object} WordInfo
@@ -85,6 +110,7 @@
 	 * @property {string} word
 	 * @property {string} sanitisedWord
 	 * @property {number} index
+	 * @property {number} flatIndex
 	 */
 	/**
 	 * @type WordInfo[]
@@ -252,8 +278,45 @@
 		wordProgressTimeout = setTimeout(handleWordProgress, wordProgressPace);
 	}
 
+	function addWordWidth(node, index) {
+		if (!node) return;
+		wordWidths[index] = node.getBoundingClientRect().width;
+		// console.log(wordWidths);
+
+		return {
+			destroy() {
+				if (index < currentWordIndex) {
+					mainTextWordCompensationTranslate += wordWidths[index];
+					tick().then(() => {
+						setTimeout(() => {
+						transitionEnabled = false;
+						tick().then(() => {
+							mainTextWordCompensationTranslate = 0;
+							mainTextXTranslate += wordWidths[index];
+							tick().then(() => {
+							setTimeout(() => {
+								transitionEnabled = true;
+							}, transitionLength)
+							})
+						})
+					}, transitionLength)
+					});
+					console.log(wordWidths[index], mainTextWordCompensationTranslate);
+				} else {
+					if (currentWordIndex - (maxLoadedWords - 1) < 0) return;
+					mainTextWordCompensationTranslate -= wordWidths[currentWordIndex - (maxLoadedWords - 1)];
+					console.log(
+						wordWidths[currentWordIndex - (maxLoadedWords - 1)],
+						mainTextWordCompensationTranslate
+					);
+				}
+			}
+		};
+	}
+
 	async function selectSentence(sentenceIndex, indexInSentence) {
-		currentWordIndex = flatSentenceMap.findIndex((word) => word.i === sentenceIndex) + indexInSentence;
+		currentWordIndex =
+			flatSentenceMap.findIndex((word) => word.i === sentenceIndex) + indexInSentence;
 		calculateTranslate();
 		await tick();
 		setSeekLineWidth(getWordWidth(currentWordIndex));
@@ -364,21 +427,29 @@
 		{/if}
 	</div>
 	<div class="main-text-wrapper">
-		<div
-			class="main-text"
-			bind:this={mainText}
-			style="transform: translateX({mainTextXTranslate}px); color: {$nightMode ? '#fff' : '#222'}"
-		>
-			{#each loadedWords as word, j (`${word.i}-${word.flatIndex}`)}
-				<button
-					class="word"
-					data-index={word.flatIndex}
-					data-sentence={word.i}
-					bind:this={wordSpanRefs[word.flatIndex]}
-					style="background-color_defunt: {word.flatIndex == currentWordIndex ? '#ccc' : 'transparent'}"
-					on:click={() => selectWord(word.flatIndex)}>{word.word}</button
-				><span>&nbsp;</span>
-			{/each}
+		<div style="transform: translateX({mainTextWordCompensationTranslate}px);">
+			<div
+				class="main-text"
+				bind:this={mainText}
+				style="
+				transform: translateX({mainTextXTranslate}px);
+				transition: {transitionEnabled ? `transform ${transitionLength/1000}s linear` : 'none'};
+				color: {$nightMode ? '#fff' : '#222'}"
+			>
+				{#each loadedWords as word, j (`${word.i}-${word.flatIndex}`)}
+					<button
+						class="word"
+						data-index={word.flatIndex}
+						data-sentence={word.i}
+						bind:this={wordSpanRefs[word.flatIndex]}
+						style="background-color_defunt: {word.flatIndex == currentWordIndex
+							? '#ccc'
+							: 'transparent'}"
+						on:click={() => selectWord(word.flatIndex)}
+						use:addWordWidth={word.flatIndex}>{word.word}</button
+					><span>&nbsp;</span>
+				{/each}
+			</div>
 		</div>
 	</div>
 	<div class="next-container">
@@ -573,7 +644,6 @@
 	}
 
 	.main-text {
-		transition: transform 0.2s linear;
 		position: relative;
 		left: 50%;
 		white-space: nowrap;
