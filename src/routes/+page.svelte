@@ -1,6 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
-	import { nightMode } from '../stores.js';
+	import { nightMode } from '$lib/stores.js';
 	import SentenceFinder from '$lib/sentenceFinder.js';
 	import SentenceLine from '$lib/components/SentenceLine.svelte';
 	import { story } from '$lib/pap.js';
@@ -481,16 +481,6 @@
 
 	.control div {
 		margin: 0 5px;
-	}
-
-	.control button {
-		background-color: transparent;
-		cursor: pointer;
-		border: 2px solid black;
-	}
-
-	:global(.night-mode) .control button {
-		border-color: white;
 	}
 
 	.control .pace-range {

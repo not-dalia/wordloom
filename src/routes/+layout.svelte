@@ -1,5 +1,5 @@
 <script>
-	import { nightMode } from '../stores.js';
+	import { nightMode } from '$lib/stores.js';
   import { onMount } from 'svelte';
 
   /**
