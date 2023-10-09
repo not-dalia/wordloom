@@ -70,7 +70,7 @@
 	 */
 	let transitionLength = 200;
 
-	const maxLoadedWords = 4;
+	const maxLoadedWords = 10;
 
 	/**
 	 * @type {WordInfo[]}
@@ -100,9 +100,9 @@
 	let seekLinePosition = 0;
 
 	// let sentenceFinder = new SentenceFinder(story.join(' '));
-	// let sentenceFinder = new SentenceFinder(story[0]);
+	let sentenceFinder = new SentenceFinder(story[0]);
 	// let sentenceFinder = new SentenceFinder(story[33]);
-	let sentenceFinder = new SentenceFinder("IT is a truth universally acknowledged, that a single man in possession\n    of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his\n    first entering a neighbourhood, this truth is so well fixed in the minds\n    of the surrounding families, that he is considered as the rightful\n    property of some one or other of their daughters. “My dear Mr. Bennet,” said his lady to him one day, “have you heard that\n    Netherfield Park is let at last?” Mr. Bennet replied that he had not. “But it is,” returned she; “for Mrs. Long has just been here, and she\n    told me all about it.”");
+	// let sentenceFinder = new SentenceFinder("IT is a truth universally acknowledged, that a single man in possession\n    of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his\n    first entering a neighbourhood, this truth is so well fixed in the minds\n    of the surrounding families, that he is considered as the rightful\n    property of some one or other of their daughters. “My dear Mr. Bennet,” said his lady to him one day, “have you heard that\n    Netherfield Park is let at last?” Mr. Bennet replied that he had not. “But it is,” returned she; “for Mrs. Long has just been here, and she\n    told me all about it.”");
 
 	/**
 	 * @typedef {Object} WordInfo
